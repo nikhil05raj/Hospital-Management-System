@@ -34,7 +34,7 @@ public class AppointmentService {
 
     public Page<Appointment> getAllAppointment(int page, int size){
         try {
-            System.out.println("Service layer : Create Appointment");
+            System.out.println("Service layer : Get all Appointment");
             Pageable pageable = PageRequest.of(page, size);
             return appointmentRepository.findAll(pageable);
         }
@@ -46,7 +46,7 @@ public class AppointmentService {
 
     public Appointment getAppointmentById(Long id){
         try {
-            System.out.println("Service layer : Create Appointment");
+            System.out.println("Service layer : Get Appointment");
             return null;
         }
         catch (Exception e) {
@@ -57,7 +57,7 @@ public class AppointmentService {
 
     public Appointment updateAppointmentById(Long id){
         try {
-            System.out.println("Service layer : Create Appointment");
+            System.out.println("Service layer : Update Appointment");
             return null;
         }
         catch (Exception e) {
@@ -66,12 +66,25 @@ public class AppointmentService {
         }
     }
 
-    public void deleteAppointmentById(Long id){
+    public Appointment rescheduleAppointment(Long id){
         try {
-            System.out.println("Service layer : Create Appointment");
+            System.out.println("Service layer : Reschedule Appointment");
+            return null;
+        }
+        catch (Exception e) {
+            logger.error("Error occurred while Rescheduling the appointment by id {} : {}",id,e.getMessage());
+            return null;
+        }
+    }
+
+    public Appointment deleteAppointmentById(Long id){
+        try {
+            System.out.println("Service layer : Delete Appointment");
+            return null;
         }
         catch (Exception e) {
             logger.error("Error occurred while deleting appointment by id {} : {}",id,e.getMessage());
+            return null;
         }
     }
 }

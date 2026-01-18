@@ -3,6 +3,7 @@ package com.example.HMS.Controllers;
 import com.example.HMS.Service.BillService;
 import com.example.HMS.Service.PatientService;
 import com.example.HMS.Service.webhookService;
+import com.example.HMS.enums.EventType;
 import com.example.HMS.models.Patient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +22,7 @@ public class PatientController {
     @Autowired
     private PatientService patientService;
 
-    @Autowired   // ← VERY IMPORTANT: Inject the webhookService instance!
+    @Autowired
     private webhookService webhookService;
 
     private static final Logger logger = LoggerFactory.getLogger(PatientController.class);
@@ -46,7 +47,7 @@ public class PatientController {
         payload.put("PatientAge",patient.getAge());
 
         String webhookUrl = "http://localhost:8081/webhook";
-        webhookService.sendWebhook(webhookUrl,payload);
+        webhookService.sendWebhook(webhookUrl, EventType.Patient_Created,payload);
 
         return patient;
     }

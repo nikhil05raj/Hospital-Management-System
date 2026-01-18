@@ -1,7 +1,10 @@
 package com.example.HMS.Controllers;
 
 import com.example.HMS.Service.AppointmentService;
+import com.example.HMS.enums.EventType;
 import com.example.HMS.models.Appointment;
+import com.example.HMS.models.Doctor;
+import com.example.HMS.models.Patient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +23,9 @@ public class AppointmentController {
     @Autowired
     private AppointmentService appointmentService;
 
+    private Patient patient;
+    private Doctor doctor;
+
     @Autowired   // ← VERY IMPORTANT: Inject the webhookService instance!
     private webhookService webhookService;
 
@@ -30,14 +36,12 @@ public class AppointmentController {
         Appointment appointment = appointmentService.createAppointment(appointmentRequest);
 
         Map<String,Object>payload = new HashMap<>();
-        payload.put("appointmentId",appointment.getId());
-        payload.put("patientId",appointment.getPatientId());
-        payload.put("doctorId",appointment.getDoctorId());
+        payload.put("patientEmail", patient.getEmail());
+        payload.put("doctorName", doctor.getName());
         payload.put("appointmentDate",appointment.getDate());
 
-        // Send the webhook
         String webhookUrl = "http://localhost:8081/webhook";
-        webhookService.sendWebhook(webhookUrl, payload);
+        webhookService.sendWebhook(webhookUrl, EventType.Appointment_Created, payload);
 
         return appointment;
     }
@@ -57,13 +61,45 @@ public class AppointmentController {
 
     @PutMapping("/{id}")
     public void updateAppointmentById(@PathVariable Long id){
-        System.out.println("Updating appointment by id "+id );
-        appointmentService.updateAppointmentById(id);
+
+        Appointment appointment = appointmentService.updateAppointmentById(id);
+
+        Map<String,Object>payload = new HashMap<>();
+        payload.put("patientEmail", patient.getEmail());
+        payload.put("doctorName", doctor.getName());
+        payload.put("appointmentDate",appointment.getDate());
+
+        // Send the webhook
+        String webhookUrl = "http://localhost:8081/webhook";
+        webhookService.sendWebhook(webhookUrl, EventType.Appointment_Updated, payload);
+    }
+
+    @PutMapping("/{id}")
+    public void rescheduleAppointment(@PathVariable Long id){
+
+        Appointment appointment = appointmentService.rescheduleAppointment(id);
+
+        Map<String,Object>payload = new HashMap<>();
+        payload.put("patientEmail", patient.getEmail());
+        payload.put("appointmentDate",appointment.getDate());
+
+        // Send the webhook
+        String webhookUrl = "http://localhost:8081/webhook";
+        webhookService.sendWebhook(webhookUrl, EventType.Appointment_Rescheduled, payload);
     }
 
     @DeleteMapping("/{id}")
     public void deleteAppointmentById(@PathVariable Long id){
-        System.out.println("Deleting appointment by id "+id );
-        appointmentService.deleteAppointmentById(id);
+
+        Appointment appointment = appointmentService.deleteAppointmentById(id);
+
+        Map<String,Object>payload = new HashMap<>();
+        payload.put("patientEmail", patient.getEmail());
+        payload.put("doctorName", doctor.getName());
+        payload.put("appointmentDate",appointment.getDate());
+
+        // Send the webhook
+        String webhookUrl = "http://localhost:8081/webhook";
+        webhookService.sendWebhook(webhookUrl, EventType.Appointment_deleted, payload);
     }
 }

@@ -2,6 +2,7 @@ package com.example.HMS.Controllers;
 
 import com.example.HMS.Service.DoctorService;
 import com.example.HMS.Service.webhookService;
+import com.example.HMS.enums.EventType;
 import com.example.HMS.models.Doctor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -41,8 +42,7 @@ public class DoctorController {
 
         // Send the webhook
         String webhookUrl = "http://localhost:8081/webhook";
-        webhookService.sendWebhook(webhookUrl, payload);
-
+        webhookService.sendWebhook(webhookUrl, EventType.Doctor_Created, payload);
         return doctor;
     }
 

@@ -2,6 +2,7 @@ package com.example.HMS.Controllers;
 
 import com.example.HMS.Service.BillService;
 import com.example.HMS.Service.webhookService;
+import com.example.HMS.enums.EventType;
 import com.example.HMS.models.Bill;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -41,7 +42,7 @@ public class BillController {
 
         // Send the webhook
         String webhookUrl = "http://localhost:8081/webhook";
-        webhookService.sendWebhook(webhookUrl, payload);
+        webhookService.sendWebhook(webhookUrl, EventType.Bill_Generated, payload);
 
         return bill;
     }
