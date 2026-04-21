@@ -1,66 +1,102 @@
 package com.example.HMS.Controllers;
 
-import com.example.HMS.Service.DoctorService;
-import com.example.HMS.Service.webhookService;
+import com.example.HMS.dto.DoctorDto;
+import com.example.HMS.service.DoctorService;
+import com.example.HMS.service.webhookService;
 import com.example.HMS.enums.EventType;
-import com.example.HMS.models.Doctor;
+import com.example.HMS.entity.Doctor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
-@RequestMapping("api/v1/doctors")
+@RequestMapping("/api/doctor")
+@RequiredArgsConstructor
 public class DoctorController {
 
-    @Autowired
-    private DoctorService doctorService;
-
-    @Autowired   // ← VERY IMPORTANT: Inject the webhookService instance!
-    private webhookService webhookService;
-
-    @GetMapping
-    public Page<Doctor> getAllDoctor(@RequestParam(defaultValue = "0") int page,
-                                     @RequestParam(defaultValue = "2") int size){
-        System.out.println("Retrieve all the Doctors");
-        return doctorService.getAllDoctor(page,size);
-    }
+    private final DoctorService doctorService;
+    private final webhookService webhookService;
 
     @PostMapping
-    public Doctor createDoctor(@RequestBody Doctor doctorRequest){
-        System.out.println("Creating Doctor Profile");
-
-        Doctor doctor = doctorService.createDoctor(doctorRequest);
+    public ResponseEntity<DoctorDto> createDoctor(@RequestBody DoctorDto doctorRequest)
+    {
+        DoctorDto doctor = doctorService.createDoctor(doctorRequest);
 
         Map<String,Object>payload = new HashMap<>();
-        payload.put("doctorId",doctor.getId());
-        payload.put("doctorName",doctor.getName());
-        payload.put("Speciality",doctor.getSpeciality());
+        payload.put("doctorId",doctor.getDoctorId());
+        payload.put("doctorName",doctor.getDoctorId());
+        payload.put("Speciality",doctor.getSpecialization());
 
         // Send the webhook
         String webhookUrl = "http://localhost:8081/webhook";
         webhookService.sendWebhook(webhookUrl, EventType.Doctor_Created, payload);
-        return doctor;
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(doctor);
     }
 
-    @GetMapping("/{id}")
-    public Doctor getDoctorById(@PathVariable Long id){
-        System.out.println("Retrieve all the Doctors");
-        return doctorService.getDoctorById(id);
+    @GetMapping("/{doctorId}")
+    public ResponseEntity<DoctorDto> getDoctorById(@PathVariable Long doctorId)
+    {
+        DoctorDto doctorDto = doctorService.getDoctorById(doctorId);
+        return ResponseEntity.status(HttpStatus.FOUND).body(doctorDto);
     }
 
-    @PutMapping("/{id}")
-    public void updateDoctorById(@PathVariable Long id){
-        System.out.println("updating Doctor's details");
-        doctorService.updateDoctor(id);
+    @GetMapping
+    public ResponseEntity<Page<DoctorDto>> getAllDoctor(@RequestParam(defaultValue = "0") int page,
+                                     @RequestParam(defaultValue = "5") int size)
+    {
+        Page<DoctorDto> doctorDto = doctorService.getAllDoctor(page,size);
+        return ResponseEntity.ok(doctorDto);
     }
 
-    @DeleteMapping("/{id}")
-    public void deleteDoctorById(@PathVariable Long id){
-        System.out.println("Deleting specific Detail of Doctor");
-        doctorService.deleteDoctor(id);
+    @GetMapping("/department/{deptName}")
+    public ResponseEntity<List<DoctorDto>> fetchDoctorsByDepartment(@PathVariable String deptName)
+    {
+        List<DoctorDto> doctors = doctorService.fetchDoctorsByDepartment(deptName);
+        return ResponseEntity.ok(doctors);
+    }
+
+    @GetMapping("/patient/{patientId}")
+    public ResponseEntity<List<DoctorDto>> fetchDoctorByPatient(@PathVariable Long patientId)
+    {
+        List<DoctorDto> doctors = doctorService.fetchDoctorByPatient(patientId);
+        return ResponseEntity.ok(doctors);
+    }
+
+    @GetMapping("/appointment/{appointmentId}")
+    public ResponseEntity<DoctorDto> fetchDoctorByAppointment(@PathVariable Long appointmentId)
+    {
+        DoctorDto doctors = doctorService.fetchDoctorByAppointment(appointmentId);
+        return ResponseEntity.ok(doctors);
+    }
+
+    @GetMapping("/specialization/{specialization}")
+    public ResponseEntity<List<DoctorDto>> fetchDoctorsBySpecialization(@PathVariable String specialization)
+    {
+        List<DoctorDto> doctors = doctorService.fetchDoctorsBySpecialization(specialization);
+        return ResponseEntity.ok(doctors);
+    }
+
+    @PutMapping("/update/{DoctorId}")
+    public ResponseEntity<DoctorDto> updateDoctor(@PathVariable Long DoctorId,
+                                                  @RequestBody DoctorDto doctorDto)
+    {
+        DoctorDto dto = doctorService.updateDoctor(DoctorId, doctorDto);
+        return ResponseEntity.status(HttpStatus.OK).body(dto);
+    }
+
+    @DeleteMapping("/delete/{doctorId}")
+    public ResponseEntity<String> deleteDoctorById(@PathVariable Long doctorId)
+    {
+        doctorService.deleteDoctor(doctorId);
+        return ResponseEntity.ok("Doctor deleted successfully with id "+doctorId);
     }
 }

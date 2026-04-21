@@ -1,11 +1,12 @@
 package com.example.HMS.Controllers;
 
-import com.example.HMS.Service.BillService;
-import com.example.HMS.Service.webhookService;
+import com.example.HMS.dto.BillDto;
+import com.example.HMS.service.BillService;
+import com.example.HMS.service.webhookService;
 import com.example.HMS.enums.EventType;
-import com.example.HMS.models.Bill;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -13,56 +14,77 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("api/v1/bill")
+@RequestMapping("api/bill")
+@RequiredArgsConstructor
 public class BillController {
 
-    @Autowired
-    private BillService billService;
-
-    @Autowired   // ← VERY IMPORTANT: Inject the webhookService instance!
-    private webhookService webhookService;
-
-    @GetMapping
-    public Page<Bill> getAllBill(@RequestParam(defaultValue = "0") int page,
-                                 @RequestParam(defaultValue = "2") int size){
-        System.out.println("get All bill");
-        return billService.GetAllBill(page,size);
-    }
+    private final BillService billService;
+    private final webhookService webhookService;
 
     @PostMapping
-    public Bill createBill(@RequestBody Bill billRequest){
-        System.out.println("Create bill");
-        Bill bill = billService.createBill(billRequest);
+    public ResponseEntity<BillDto> createBill(@RequestBody BillDto billRequestDto)
+    {
+        BillDto billDto = billService.createBill(billRequestDto);
 
         Map<String,Object> payload = new HashMap<>();
-        payload.put("BillId",bill.getId());
-        payload.put("patientId",bill.getPatientId());
-        payload.put("Amount",bill.getAmount());
-        payload.put("Status",bill.getStatus());
+        payload.put("BillId",billDto.getBillId());
+        payload.put("patientId",billDto.getPatientId());
+        payload.put("Amount",billDto.getAmount());
+        payload.put("Status",billDto.getStatus());
 
-        // Send the webhook
-        String webhookUrl = "http://localhost:8081/webhook";
+        String webhookUrl = "http://localhost:8081/webhook";    // Send the webhook
         webhookService.sendWebhook(webhookUrl, EventType.Bill_Generated, payload);
 
-        return bill;
+        return ResponseEntity.ok(billDto);
     }
 
-    @GetMapping("/id")
-    public Bill getBillById(@PathVariable Long id){
-        System.out.println("get bill by id");
-        return billService.GetBillById(id);
+    @GetMapping("/{billId}")
+    public ResponseEntity<BillDto> getBillById(@PathVariable Long billId)
+    {
+        BillDto billDto = billService.getBillById(billId);
+
+        return ResponseEntity.ok(billDto);
     }
 
-    @PutMapping("/id")
-    public void updateBillById(@PathVariable Long id){
-        System.out.println("update bill by id");
-        billService.updateBillById(id);
+    @GetMapping
+    public ResponseEntity<Page<BillDto>> getAllBill(@RequestParam(defaultValue = "0") int page,
+                                 @RequestParam(defaultValue = "2") int size){
+
+        Page<BillDto> dtos = billService.getAllBill(page,size);
+
+        return ResponseEntity.ok(dtos);
     }
 
-    @DeleteMapping("/id")
-    public void deleteBillById(@PathVariable Long id){
-        System.out.println("delete bill by id");
-        billService.deleteBillById(id);
+    @PutMapping("/update/{billId}")
+    public ResponseEntity<BillDto> updateBillById(@PathVariable Long billId,
+                                                  @RequestBody BillDto dto)
+    {
+        BillDto billDto = billService.updateBillById(billId, dto);
+
+        return ResponseEntity.ok(billDto);
+    }
+
+    @DeleteMapping("/delete/{billId}")
+    public ResponseEntity<String> deleteBillById(@PathVariable Long billId)
+    {
+        billService.deleteBillById(billId);
+        return ResponseEntity.ok(String.format("the bill with id %d has been deleted successfully.",billId));
+    }
+
+    // Get all bills for a patient
+    @GetMapping("/patient/{patientId}")
+    public ResponseEntity<List<BillDto>> getBillsByPatient(@PathVariable Long patientId)
+    {
+        List<BillDto> dtos = billService.getBillByPatient(patientId);
+        return ResponseEntity.ok(dtos);
+    }
+
+    // Get bill for a specific appointment
+    @GetMapping("/appointment/{appointmentId}")
+    public ResponseEntity<BillDto> getBillByAppointment(@PathVariable Long appointmentId)
+    {
+        BillDto dto = billService.getBillByAppointment(appointmentId);
+        return ResponseEntity.ok(dto);
     }
 
 }

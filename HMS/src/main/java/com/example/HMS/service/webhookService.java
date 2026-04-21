@@ -1,8 +1,6 @@
-package com.example.HMS.Service;
+package com.example.HMS.service;
 
-import com.example.HMS.enums.EventType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
@@ -16,13 +14,14 @@ public class webhookService{
         this.restTemplate = restTemplate;
     }
 
-    public void sendWebhook(String url, EventType eventType, Map<String, Object>payload){
-
+    public void sendWebhook(String url, Enum eventType, Map<String, Object>payload) {
         payload.put("event",eventType.name());
+
         try {
             restTemplate.postForObject(url, payload, String.class);
-            System.out.println("Webhooks sent successfully to :"+url);
-        } catch (Exception e) {
+            System.out.println("Webhooks sent successfully to : "+url);
+        }
+        catch (Exception e) {
             System.err.println("Failed to send webhooks : " + e.getMessage());
         }
     }

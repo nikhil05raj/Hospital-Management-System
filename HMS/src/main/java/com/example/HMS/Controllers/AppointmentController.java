@@ -1,105 +1,147 @@
 package com.example.HMS.Controllers;
 
-import com.example.HMS.Service.AppointmentService;
-import com.example.HMS.enums.EventType;
-import com.example.HMS.models.Appointment;
-import com.example.HMS.models.Doctor;
-import com.example.HMS.models.Patient;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.example.HMS.dto.AppointmentDto;
+import com.example.HMS.enums.AppointmentStatus;
+import com.example.HMS.service.AppointmentService;
+import com.example.HMS.entity.Patient;
+import com.example.HMS.entity.Appointment;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-//import java.util.logging.Logger;
-import com.example.HMS.Service.webhookService;
-
+import com.example.HMS.service.webhookService;
 
 @RestController
-@RequestMapping("/api/v1/appointments")
+@RequestMapping("/api/appointment")
+@RequiredArgsConstructor
 public class AppointmentController {
 
-    @Autowired
-    private AppointmentService appointmentService;
+    Patient patient;
 
-    private Patient patient;
-    private Doctor doctor;
-
-    @Autowired   // ← VERY IMPORTANT: Inject the webhookService instance!
-    private webhookService webhookService;
+    private final AppointmentService appointmentService;
+    private final webhookService webhookService;
 
     @PostMapping
-    public Appointment createAppointment(@RequestBody Appointment appointmentRequest){
-        System.out.println("Creating an Appointment");
-
-        Appointment appointment = appointmentService.createAppointment(appointmentRequest);
+    public ResponseEntity<AppointmentDto> createAppointment(@RequestBody AppointmentDto appointmentRequest)
+    {
+        AppointmentDto savedAppointment = appointmentService.createAppointment(appointmentRequest);
 
         Map<String,Object>payload = new HashMap<>();
-        payload.put("patientEmail", patient.getEmail());
-        payload.put("doctorName", doctor.getName());
-        payload.put("appointmentDate",appointment.getDate());
+        payload.put("doctorName", savedAppointment.getDoctorId());
+        payload.put("patientName", savedAppointment.getPatientId());
+        payload.put("patientEmail", savedAppointment.getEmail());
+        payload.put("appointmentDate", savedAppointment.getDate());
 
         String webhookUrl = "http://localhost:8081/webhook";
-        webhookService.sendWebhook(webhookUrl, EventType.Appointment_Created, payload);
+        webhookService.sendWebhook(webhookUrl, AppointmentStatus.APPOINTMENT_SCHEDULED, payload);
 
-        return appointment;
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedAppointment);
     }
 
     @GetMapping
-    public Page<Appointment> getAppointments(@RequestParam(defaultValue = "0") int page,
-                                             @RequestParam(defaultValue = "2") int size){
-        System.out.println("Fetching all the Appointments");
-        return appointmentService.getAllAppointment(page,size);
+    public ResponseEntity<Page<AppointmentDto>> getAllAppointment(@RequestParam(defaultValue = "0") int page,
+                                             @RequestParam(defaultValue = "5") int size)
+    {
+        Page<AppointmentDto> appointmentDto =  appointmentService.getAllAppointment(page,size);
+
+        return ResponseEntity.ok(appointmentDto);
     }
 
-    @GetMapping("/{id}")
-    public Appointment getAppointmentById(@PathVariable Long id){
-        System.out.println("Fetching appointment by id "+id );
-        return appointmentService.getAppointmentById(id);
+    @GetMapping("/{appointmentId}")
+    public ResponseEntity<AppointmentDto> getAppointmentById(@PathVariable Long appointmentId)
+    {
+        AppointmentDto appointmentDto = appointmentService.getAppointmentById(appointmentId);
+
+        return ResponseEntity.ok(appointmentDto);
     }
 
-    @PutMapping("/{id}")
-    public void updateAppointmentById(@PathVariable Long id){
-
-        Appointment appointment = appointmentService.updateAppointmentById(id);
+    @PutMapping("/update/{appointmentId}")
+    public ResponseEntity<AppointmentDto> updateAppointmentById(@PathVariable Long appointmentId,
+                                                                @RequestBody AppointmentDto dto)
+    {
+        AppointmentDto appointmentDto = appointmentService.updateAppointmentById(appointmentId, dto);
 
         Map<String,Object>payload = new HashMap<>();
-        payload.put("patientEmail", patient.getEmail());
-        payload.put("doctorName", doctor.getName());
-        payload.put("appointmentDate",appointment.getDate());
+        payload.put("Appointment Id",appointmentId);
+        payload.put("Doctor Id", appointmentDto.getDoctorId());
+        payload.put("Patient Id",appointmentDto.getPatientId());
+        payload.put("Appointment date",appointmentDto.getDate());
+        payload.put("Patient email",appointmentDto.getEmail());
 
         // Send the webhook
         String webhookUrl = "http://localhost:8081/webhook";
-        webhookService.sendWebhook(webhookUrl, EventType.Appointment_Updated, payload);
+        webhookService.sendWebhook(webhookUrl, AppointmentStatus.APPOINTMENT_UPDATED, payload);
+
+        return ResponseEntity.status(HttpStatus.OK).body(appointmentDto);
     }
 
-    @PutMapping("/{id}")
-    public void rescheduleAppointment(@PathVariable Long id){
-
-        Appointment appointment = appointmentService.rescheduleAppointment(id);
+    @PutMapping("/reschedule/{appointmentId}")
+    public ResponseEntity<AppointmentDto> rescheduleAppointment(@PathVariable Long appointmentId,
+                                      @RequestBody AppointmentDto dto)
+    {
+        AppointmentDto appointmentDto =  appointmentService.rescheduleAppointment(appointmentId, dto);
 
         Map<String,Object>payload = new HashMap<>();
-        payload.put("patientEmail", patient.getEmail());
-        payload.put("appointmentDate",appointment.getDate());
+        payload.put("appointmentDate",dto.getDate());
+        payload.put("appointmentTime",dto.getTime());
 
-        // Send the webhook
         String webhookUrl = "http://localhost:8081/webhook";
-        webhookService.sendWebhook(webhookUrl, EventType.Appointment_Rescheduled, payload);
+        webhookService.sendWebhook(webhookUrl, AppointmentStatus.APPOINTMENT_RESCHEDULED, payload);
+
+        return ResponseEntity.ok(appointmentDto);
     }
 
-    @DeleteMapping("/{id}")
-    public void deleteAppointmentById(@PathVariable Long id){
-
-        Appointment appointment = appointmentService.deleteAppointmentById(id);
+    @DeleteMapping("/cancel/{appointmentId}")
+    public ResponseEntity<String> cancelAppointment(@PathVariable Long appointmentId)
+    {
+        Appointment deletedAppointment = appointmentService.cancelAppointment(appointmentId);
 
         Map<String,Object>payload = new HashMap<>();
-        payload.put("patientEmail", patient.getEmail());
-        payload.put("doctorName", doctor.getName());
-        payload.put("appointmentDate",appointment.getDate());
+        payload.put("Staus",String.format("Appointment has been cancelled with id %d",appointmentId));
+        payload.put("patientEmail", deletedAppointment.getPatientEmail());
 
-        // Send the webhook
         String webhookUrl = "http://localhost:8081/webhook";
-        webhookService.sendWebhook(webhookUrl, EventType.Appointment_deleted, payload);
+        webhookService.sendWebhook(webhookUrl, AppointmentStatus.APPOINTMENT_CANCELLED, payload);
+        return ResponseEntity.ok(String.format("the appointment with id : %d has been cancelled",appointmentId));
     }
+
+    @GetMapping("/date/{date}")
+    public ResponseEntity<List<AppointmentDto>> getAppointmentsByDate(@PathVariable LocalDate date)
+    {
+        List<AppointmentDto> appointments = appointmentService.getAppointmentsByDate(date);
+
+        return ResponseEntity.ok(appointments);
+    }
+
+    @GetMapping("/doctor/{doctorId}")
+    public ResponseEntity<List<AppointmentDto>> getAppointmentByDoctor(@PathVariable Long doctorId)
+    {
+        List<AppointmentDto> appointments = appointmentService.getAppointmentByDoctor(doctorId);
+
+        return ResponseEntity.ok(appointments);
+    }
+
+    @GetMapping("/patient/{patientId}")
+    public ResponseEntity<List<AppointmentDto>> getAppointmentByPatient(@PathVariable Long patientId)
+    {
+        List<AppointmentDto> appointments = appointmentService.getAppointmentByPatient(patientId);
+
+        return ResponseEntity.ok(appointments);
+    }
+
+    @GetMapping("/status/{status}")
+    public ResponseEntity<List<AppointmentDto>> fetchAppointmentByStatus(@PathVariable AppointmentStatus status)
+    {
+        List<AppointmentDto> appointments = appointmentService.getAppointmentByStatus(status);
+
+        return ResponseEntity.ok(appointments);
+    }
+
+
 }
