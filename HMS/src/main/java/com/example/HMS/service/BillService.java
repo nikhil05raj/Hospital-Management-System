@@ -12,6 +12,10 @@ import com.example.HMS.repository.AppointmentRepository;
 import com.example.HMS.repository.BillRepository;
 import com.example.HMS.repository.PatientRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -52,6 +56,7 @@ public class BillService {
     }
 
     // get bill by id
+    @Cacheable(value = "bills", key = "#id")
     public BillDto getBillById(Long billId)
     {
         if (billId <= 0){
@@ -66,6 +71,7 @@ public class BillService {
     }
 
     // get all bills
+    @Cacheable(value = "allBills")
     public Page<BillDto> getAllBill(int page, int size)
     {
         Pageable pageable = PageRequest.of(page, size);
@@ -77,6 +83,16 @@ public class BillService {
     }
 
     // Update bill by id
+    @Caching(
+            put = {
+                    @CachePut(value = "bills", key = "#id"),
+            },
+            evict = {
+                    @CacheEvict(value = "allBills", allEntries = true),
+                    @CacheEvict(value = "billsByAppointment", allEntries = true),
+                    @CacheEvict(value = "billsByPatient", allEntries = true)
+            }
+    )
     public BillDto updateBillById(Long billId , BillDto dto)
     {
         if (billId <= 0){
@@ -111,12 +127,19 @@ public class BillService {
     }
 
     // Delete bill by id
+    @Caching(evict = {
+            @CacheEvict(value = "bills", key = "#id"),
+            @CacheEvict(value = "allBills", allEntries = true),
+            @CacheEvict(value = "billsByPatient", allEntries = true),
+            @CacheEvict(value = "billsByAppointment", allEntries = true)
+    })
     public void deleteBillById(Long billId)
     {
         billRepository.deleteById(billId);
     }
 
     // get bill by Patient
+    @Cacheable(value = "billsByPatient", key = "#patientId")
     public List<BillDto> getBillByPatient(Long patientId)
     {
         if (patientId <= 0 ){
@@ -129,6 +152,7 @@ public class BillService {
     }
 
     // get bill by Appointment
+    @Cacheable(value = "billsByAppointment", key = "#appointmentId")
     public BillDto getBillByAppointment(Long appointmentId)
     {
         if (appointmentId <= 0){

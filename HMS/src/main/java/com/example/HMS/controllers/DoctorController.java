@@ -1,12 +1,10 @@
-package com.example.HMS.Controllers;
+package com.example.HMS.controllers;
 
 import com.example.HMS.dto.DoctorDto;
 import com.example.HMS.service.DoctorService;
 import com.example.HMS.service.webhookService;
 import com.example.HMS.enums.EventType;
-import com.example.HMS.entity.Doctor;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,7 +13,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/doctor")

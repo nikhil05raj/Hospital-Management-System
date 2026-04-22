@@ -1,4 +1,4 @@
-package com.example.HMS.Controllers;
+package com.example.HMS.controllers;
 
 import com.example.HMS.dto.PatientDto;
 import com.example.HMS.service.PatientService;

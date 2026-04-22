@@ -7,6 +7,10 @@ import com.example.HMS.exception.DepartmentNotFoundException;
 import com.example.HMS.repository.DepartmentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -26,13 +30,13 @@ public class DepartmentService {
     public DepartmentDto createDepartment(DepartmentDto dto)
     {
         Department dept = departmentMapper.toEntity(dto);
-
         Department department = departmentRepository.save(dept);
 
         return departmentMapper.toDto(department);
     }
 
     // get All Department
+    @Cacheable(value = "allDepartments")
     public Page<DepartmentDto> fetchAllDepartment(int page, int size)
     {
         Pageable pageable = PageRequest.of(page, size);
@@ -43,6 +47,7 @@ public class DepartmentService {
     }
 
     // get Department by ID
+    @Cacheable(value = "departments", key = "#id")
     public DepartmentDto fetchDepartmentById(Long departmentId)
     {
         if (departmentId == null ) {
@@ -61,6 +66,15 @@ public class DepartmentService {
     }
 
     // Update Department
+    @Caching(
+            put = {
+                    @CachePut(value = "departments", key = "#id")
+            },
+            evict = {
+                    @CacheEvict(value = "allDepartments", allEntries = true),
+                    @CacheEvict(value = "departmentByNam",  allEntries = true)
+            }
+    )
     public DepartmentDto updateDepartment(Long departmentId, DepartmentDto dto)
     {
         Optional<Department> dept = departmentRepository.findById(departmentId);
@@ -79,6 +93,11 @@ public class DepartmentService {
     }
 
     // delete Department
+    @Caching(evict = {
+            @CacheEvict(value = "departments", key = "#id"),
+            @CacheEvict(value = "allDepartments", allEntries = true),
+            @CacheEvict(value = "departmentByNam",  allEntries = true)
+    })
     public String deleteDepartment(Long departmentId)
     {
         Optional<Department> department = departmentRepository.findById(departmentId);
@@ -93,11 +112,10 @@ public class DepartmentService {
         }
 
         return deptName;
-
-
     }
 
     // get Department by Name
+    @Cacheable(value = "departmentByName", key = "#departmentName")
     public DepartmentDto fetchDeptByDeptName(String departName)
     {
         if (departName == null){

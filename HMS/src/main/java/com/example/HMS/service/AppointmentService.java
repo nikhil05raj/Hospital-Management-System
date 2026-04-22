@@ -14,6 +14,10 @@ import com.example.HMS.repository.DoctorRepository;
 import com.example.HMS.repository.PatientRepository;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.Hibernate;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -55,6 +59,7 @@ public class AppointmentService {
     }
 
     // get all appointments
+    @Cacheable(value = "allAppointments")
     public Page<AppointmentDto> getAllAppointment(int page, int size)
     {
         Pageable pageable = PageRequest.of(page, size);
@@ -64,6 +69,7 @@ public class AppointmentService {
     }
 
     // get appointment by id
+    @Cacheable(value = "appointments", key = "#id")
     public AppointmentDto getAppointmentById(Long appointmentId)
     {
         Optional<Appointment> optionalAppointment = appointmentRepository.findById(appointmentId);
@@ -82,6 +88,16 @@ public class AppointmentService {
     }
 
     // update appointment
+    @Caching(
+            put = {
+                    @CachePut(value = "appointments", key = "#id")
+            },
+            evict = {
+                    @CacheEvict(value = "allAppointments", allEntries = true),
+                    @CacheEvict(value = "appointmentsByDoctor", allEntries = true),
+                    @CacheEvict(value = "appointmentsByPatient", allEntries = true)
+            }
+    )
     public AppointmentDto updateAppointmentById(Long appointmentId,AppointmentDto dto )
     {
         Optional<Appointment> optionalAppointment = appointmentRepository.findById(appointmentId);
@@ -142,6 +158,12 @@ public class AppointmentService {
     }
 
     // cancel appointment
+    @Caching(evict = {
+            @CacheEvict(value = "appointments", key = "#id"),
+            @CacheEvict(value = "appointmentsByDoctor", allEntries = true),
+            @CacheEvict(value = "appointmentsByPatient", allEntries = true),
+            @CacheEvict(value = "allAppointments", allEntries = true)
+    })
     public Appointment cancelAppointment(Long appointmentId)
     {
         Optional<Appointment> optionalAppointment = appointmentRepository.findById(appointmentId);
@@ -166,6 +188,7 @@ public class AppointmentService {
     }
 
     // get appointments by doctor
+    @Cacheable(value = "appointmentsByDoctor", key = "#doctorId")
     public List<AppointmentDto> getAppointmentByDoctor(Long doctorId)
     {
         if (doctorId == null || doctorId <= 0) {
@@ -178,6 +201,7 @@ public class AppointmentService {
     }
 
     // get appointments by patient
+    @Cacheable(value = "appointmentsByPatient", key = "#patientId")
     public List<AppointmentDto> getAppointmentByPatient(Long patientId)
     {
         if (patientId == null || patientId <= 0) {

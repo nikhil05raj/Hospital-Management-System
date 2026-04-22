@@ -9,6 +9,10 @@ import com.example.HMS.exception.PrescriptionNotFoundException;
 import com.example.HMS.repository.MedicalRecordRepository;
 import com.example.HMS.repository.PrescriptionRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -46,6 +50,7 @@ public class PrescriptionService {
     }
 
     // get all prescription
+    @Cacheable(value = "allPrescription")
     public List<PrescriptionDto> fetchAllPrescription()
     {
         List<Prescription> prescriptions = prescriptionRepository.findAll();
@@ -54,6 +59,7 @@ public class PrescriptionService {
     }
 
     // get prescription by id
+    @Cacheable(value = "prescriptions", key = "#id")
     public PrescriptionDto fetchPrescriptionById(Long prescriptionId)
     {
         if (prescriptionId == null || prescriptionId <= 0) {
@@ -69,6 +75,7 @@ public class PrescriptionService {
     }
 
     // get prescription by MedicalRecord
+    @Cacheable(value = "prescriptionByMedicalRecord", key = "#recordId")
     public PrescriptionDto fetchPrescriptionByMedicalRecord(Long recordId)
     {
         if (recordId == null || recordId <= 0) {
@@ -84,6 +91,7 @@ public class PrescriptionService {
     }
 
     // get prescription by patient
+    @Cacheable(value = "prescriptionByPatient", key = "#patientId")
     public List<PrescriptionDto> fetchPrescriptionByPatient(Long patientId)
     {
         if (patientId == null || patientId <= 0) {
@@ -102,6 +110,16 @@ public class PrescriptionService {
     }
 
     // update prescription
+    @Caching(
+            put = {
+                    @CachePut(value = "prescriptions", key = "#id")
+            },
+            evict = {
+                    @CacheEvict(value = "prescriptionByPatient", allEntries = true),
+                    @CacheEvict(value = "allPrescription", allEntries = true),
+                    @CacheEvict(value = "prescriptionByMedicalRecord", allEntries = true)
+            }
+    )
     public PrescriptionDto updatePrescription(Long prescriptionId, PrescriptionDto dto)
     {
         Prescription prescription = null;
@@ -140,6 +158,14 @@ public class PrescriptionService {
     }
 
     // delete prescription
+    @Caching(
+            evict = {
+                    @CacheEvict(value = "prescriptions", key = "#id"),
+                    @CacheEvict(value = "prescriptionByMedicalRecord", allEntries = true),
+                    @CacheEvict(value = "prescriptionByPatient", allEntries = true),
+                    @CacheEvict(value = "allPrescription", allEntries = true)
+            }
+    )
     public void deletePrescription(Long prescriptionId)
     {
         if (prescriptionId == null ) {

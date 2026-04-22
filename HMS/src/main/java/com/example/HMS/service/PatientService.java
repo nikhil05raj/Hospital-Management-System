@@ -9,6 +9,10 @@ import com.example.HMS.exception.PatientNotFoundException;
 import com.example.HMS.repository.AppointmentRepository;
 import com.example.HMS.repository.PatientRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -39,6 +43,7 @@ public class PatientService {
     }
 
     // get all patients
+    @Cacheable(value = "allPatient")
     public Page<PatientDto> getAllPatient(int page, int size)
     {
         Pageable pageable = PageRequest.of(page, size);
@@ -49,6 +54,7 @@ public class PatientService {
     }
 
     // get patient by id
+    @Cacheable(value = "patients", key = "#id")
     public PatientDto getPatientById(Long patientId)
     {
         if (patientId == null ) {
@@ -66,6 +72,7 @@ public class PatientService {
     }
 
     // get patient by appointment
+    @Cacheable(value = "patientByAppointment", key = "appointmentId")
     public PatientDto fetchPatientByAppointment(Long appointmentId)
     {
         if (appointmentId == null ) {
@@ -86,6 +93,15 @@ public class PatientService {
     }
 
     // Update patient's details
+    @Caching(
+            put = {
+                    @CachePut(value = "patients", key = "#id"),
+            },
+            evict = {
+                    @CacheEvict(value = "allPatient", allEntries = true),
+                    @CacheEvict(value = "patientByAppointment", allEntries = true)
+            }
+    )
     public PatientDto updatePatient(Long patientId, PatientDto dto)
     {
         Optional<Patient> existingPatient = patientRepository.findById(patientId);
@@ -112,6 +128,13 @@ public class PatientService {
     }
 
     // delete patient record
+    @Caching(
+            evict = {
+                    @CacheEvict(value = "patients", key = "#id"),
+                    @CacheEvict(value = "allPatient", allEntries = true),
+                    @CacheEvict(value = "patientByAppointment", allEntries = true),
+            }
+    )
     public void deletePatient(Long patientId)
     {
         patientRepository.deleteById(patientId);

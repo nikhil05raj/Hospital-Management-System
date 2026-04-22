@@ -1,6 +1,6 @@
 plugins {
 	id 'java'
-	id 'org.springframework.boot' version '4.0.1'
+	id 'org.springframework.boot' version '3.4.5'
 	id 'io.spring.dependency-management' version '1.1.7'
 }
 
@@ -14,29 +14,45 @@ java {
 	}
 }
 
+repositories {
+	mavenCentral()
+}
+
+//configurations {
+//	compileOnly {
+//		extendsFrom annotationProcessor
+//	}
+//	all {
+//		exclude group : 'org.springframework.boot', module:'spring-boot-starter-logging'
+//	}
+//}
 configurations {
 	compileOnly {
 		extendsFrom annotationProcessor
 	}
 }
 
-repositories {
-	mavenCentral()
-}
-
-configurations {
-	all {
-		exclude group : 'org.springframework.boot', module:'spring-boot-starter-logging'
-	}
+configurations.configureEach {
+	exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
 }
 
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter'
-
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	runtimeOnly 'com.mysql:mysql-connector-j'
+
+	// Caching
+	implementation 'org.springframework.boot:spring-boot-starter-cache'
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
+	// AOP
+	implementation 'org.springframework.boot:spring-boot-starter-aop'
+
+	// Redis JSON Serialization
+	implementation 'com.fasterxml.jackson.core:jackson-databind'
+	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
 
 	implementation 'org.springframework.boot:spring-boot-starter-log4j2'
 
@@ -48,7 +64,6 @@ dependencies {
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
 }
 
 tasks.named('test') {

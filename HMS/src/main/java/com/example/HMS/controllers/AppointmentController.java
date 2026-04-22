@@ -1,4 +1,4 @@
-package com.example.HMS.Controllers;
+package com.example.HMS.controllers;
 
 import com.example.HMS.dto.AppointmentDto;
 import com.example.HMS.enums.AppointmentStatus;

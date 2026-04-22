@@ -10,6 +10,10 @@ import com.example.HMS.repository.AppointmentRepository;
 import com.example.HMS.repository.DepartmentRepository;
 import com.example.HMS.repository.DoctorRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -46,6 +50,7 @@ public class DoctorService {
     }
 
     // get doctor by id
+    @Cacheable(value = "doctors", key = "#id")
     public DoctorDto getDoctorById(Long doctorId)
     {
         Optional<Doctor> optionalDoctor = doctorRepository.findById(doctorId);
@@ -57,6 +62,7 @@ public class DoctorService {
     }
 
     // get all doctor
+    @Cacheable(value = "allDoctors")
     public Page<DoctorDto> getAllDoctor(int page, int size)
     {
 
@@ -67,6 +73,7 @@ public class DoctorService {
     }
 
     // get doctor by department
+    @Cacheable(value = "doctorsByDepartment", key = "#departmentName")
     public List<DoctorDto> fetchDoctorsByDepartment(String deptName)
     {
         if (deptName == null || deptName.trim().isEmpty()) {
@@ -79,6 +86,7 @@ public class DoctorService {
     }
 
     // get doctors by patient  // Patient → Appointment → Doctor
+    @Cacheable(value = "doctorsByPatient", key = "#patientID")
     public List<DoctorDto> fetchDoctorByPatient(Long patientId)
     {
         if (patientId == null || patientId <= 0 ) {
@@ -95,6 +103,7 @@ public class DoctorService {
     }
 
     // get doctor by appointment id → Appointment → Doctor
+    @Cacheable(value = "doctorsByAppointment", key = "#appointmentId")
     public DoctorDto fetchDoctorByAppointment(Long appointmentId)
     {
         if (appointmentId == null ) {
@@ -111,6 +120,7 @@ public class DoctorService {
     }
 
     // get doctors by specialization
+    @Cacheable(value = "doctorsBySpec", key = "#specialization")
     public List<DoctorDto> fetchDoctorsBySpecialization(String specialization)
     {
         if (specialization == null ) {
@@ -127,6 +137,19 @@ public class DoctorService {
     }
 
     // update doctor  doctorId --> Doctor --> update details
+    @Caching(
+            put = {
+                    @CachePut(value = "doctors", key = "#doctorId"),
+
+            },
+            evict = {
+                    @CacheEvict(value = "allDoctors", allEntries = true),
+                    @CacheEvict(value = "doctorsBySpec", allEntries = true),
+                    @CacheEvict(value = "doctorsByDepartment", allEntries = true),
+                    @CacheEvict(value = "doctorsByPatient", allEntries = true),
+                    @CacheEvict(value = "doctorsByAppointment", allEntries = true)
+            }
+    )
     public DoctorDto updateDoctor(Long doctorId, DoctorDto dto)
     {
         Optional<Doctor> optionalDoctor = doctorRepository.findById(doctorId);
@@ -151,6 +174,16 @@ public class DoctorService {
     }
 
     // delete doctor
+    @Caching(
+            evict = {
+                    @CacheEvict(value = "doctors", key = "#doctorId"),
+                    @CacheEvict(value = "allDoctors", allEntries = true),
+                    @CacheEvict(value = "doctorsByDepartment", allEntries = true),
+                    @CacheEvict(value = "doctorsByPatient", allEntries = true),
+                    @CacheEvict(value = "doctorsByAppointment", allEntries = true),
+                    @CacheEvict(value = "doctorsBySpec", allEntries = true)
+            }
+    )
     public void deleteDoctor(Long doctorId){
 
         Optional<Doctor> optionalDoctor = doctorRepository.findById(doctorId);

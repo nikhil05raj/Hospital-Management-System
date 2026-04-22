@@ -1,4 +1,4 @@
-package com.example.HMS.Controllers;
+package com.example.HMS.controllers;
 
 import com.example.HMS.dto.MedicalRecordDto;
 import com.example.HMS.service.MedicalRecordService;
@@ -39,31 +39,48 @@ public class MedicalRecordController {
     }
 
     @GetMapping("/patient/{patientId}")
-    public ResponseEntity<List<MedicalRecordDto>> getMedicalRecordByPatient(@PathVariable Long patientId)
+    public ResponseEntity<List<MedicalRecordDto>> getRecordByPatient(@PathVariable Long patientId)
     {
         List<MedicalRecordDto> dto = medicalRecordService.fetchRecordByPatient(patientId);
         return ResponseEntity.status(HttpStatus.OK).body(dto);
     }
 
     @GetMapping("/doctor/{doctorId}")
-    public ResponseEntity<List<MedicalRecordDto>> fetchRecordByDoctor(@PathVariable Long doctorId)
+    public ResponseEntity<List<MedicalRecordDto>> getRecordByDoctor(@PathVariable Long doctorId)
     {
         List<MedicalRecordDto> dto = medicalRecordService.fetchRecordByDoctor(doctorId);
         return ResponseEntity.status(HttpStatus.OK).body(dto);
     }
 
     @GetMapping("/visitDate/{visitDate}")
-    public ResponseEntity<List<MedicalRecordDto>> fetchRecordByVisitDate(@PathVariable LocalDate visitDate)
+    public ResponseEntity<List<MedicalRecordDto>> getRecordByVisitDate(@PathVariable LocalDate visitDate)
     {
         List<MedicalRecordDto> dto = medicalRecordService.fetchRecordByVisitDate(visitDate);
         return ResponseEntity.status(HttpStatus.OK).body(dto);
     }
 
     @GetMapping("/appointment/{appointmentId}")
-    public ResponseEntity<List<MedicalRecordDto>> fetchRecordByAppointment(@PathVariable Long appointmentId)
+    public ResponseEntity<List<MedicalRecordDto>> getRecordByAppointment(@PathVariable Long appointmentId)
     {
         List<MedicalRecordDto> dto = medicalRecordService.fetchRecordByAppointment(appointmentId);
         return ResponseEntity.status(HttpStatus.OK).body(dto);
+    }
+
+    @DeleteMapping("/delete/{recordId}")
+    public ResponseEntity<String> deleteRecord(@PathVariable Long recordId)
+    {
+        medicalRecordService.deleteRecord(recordId);
+        return ResponseEntity.ok(String.format("the medical record with id %d has been deleted successfully"));
+    }
+
+    @PutMapping("/update/{recordId}")
+    public ResponseEntity<MedicalRecordDto> updateMedicalRecord(
+            @PathVariable Long recordId,
+            @RequestBody MedicalRecordDto dto) {
+
+        MedicalRecordDto updatedDto = medicalRecordService.updateRecord(recordId, dto);
+
+        return ResponseEntity.ok(updatedDto);
     }
 
 }
