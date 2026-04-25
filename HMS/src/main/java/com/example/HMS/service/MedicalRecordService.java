@@ -1,5 +1,6 @@
 package com.example.HMS.service;
 
+import com.example.HMS.anotations.Auditable;
 import com.example.HMS.dto.MedicalRecordDto;
 import com.example.HMS.dto.MedicalRecordMapper;
 import com.example.HMS.entity.*;
@@ -30,6 +31,7 @@ public class MedicalRecordService {
     private final MedicalRecordMapper medicalRecordMapper;
 
     // Create medical record
+    @Auditable(action = "CREATE_MEDICAL_RECORD")
     public MedicalRecordDto createMedicalRecord(MedicalRecordDto dto)
     {
         if (dto.getAppointmentId() == null) {
@@ -67,7 +69,6 @@ public class MedicalRecordService {
     }
 
     // get all record
-    @Cacheable(value = "allRecord")
     public List<MedicalRecordDto> fetchAllRecord()
     {
         List<MedicalRecord> medicalRecords = medicalRepository.findAll();
@@ -76,7 +77,7 @@ public class MedicalRecordService {
     }
 
     // get record by id
-    @Cacheable(value = "records", key = "#id")
+    @Cacheable(value = "records", key = "#recordId")
     public MedicalRecordDto fetchRecordById(Long recordId)
     {
         Optional<MedicalRecord> medicalRecord = medicalRepository.findById(recordId);
@@ -145,29 +146,30 @@ public class MedicalRecordService {
     // delete the record by id
     @Caching(
             evict = {
-                    @CacheEvict(value = "allRecord", allEntries = true),
                     @CacheEvict(value = "records", allEntries = true),
                     @CacheEvict(value = "recordByPatient", allEntries = true),
                     @CacheEvict(value = "recordByDoctor", allEntries = true),
                     @CacheEvict(value = "recordByAppointment", allEntries = true)
             }
     )
+    @Auditable(action = "DELETE_MEDICAL_RECORD")
     public void deleteRecord(Long recordId)
     {
         medicalRepository.deleteById(recordId);
     }
 
+    // update record by id
     @Caching(
             put = {
-                    @CachePut(value = "records", key = "#id")
+                    @CachePut(value = "records", key = "#recordId")
             },
             evict = {
-                    @CacheEvict(value = "allRecord", allEntries = true),
                     @CacheEvict(value = "recordByPatient", allEntries = true),
                     @CacheEvict(value = "recordByDoctor", allEntries = true),
                     @CacheEvict(value = "recordByAppointment", allEntries = true)
             }
     )
+    @Auditable(action = "UPDATE_MEDICAL_RECORD")
     public MedicalRecordDto updateRecord(Long recordId, MedicalRecordDto dto)
     {
         if (recordId == null || recordId <= 0) {
@@ -192,6 +194,5 @@ public class MedicalRecordService {
 
         return medicalRecordMapper.toDto(savedRecord);
     }
-
 
 }

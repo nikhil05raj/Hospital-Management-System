@@ -1,5 +1,6 @@
 package com.example.HMS.service;
 
+import com.example.HMS.anotations.Auditable;
 import com.example.HMS.dto.DepartmentDto;
 import com.example.HMS.dto.DepartmentMapper;
 import com.example.HMS.entity.Department;
@@ -27,6 +28,7 @@ public class DepartmentService {
     private final DepartmentMapper departmentMapper;
 
     // Create Department
+    @Auditable(action = "CREATE_DEPARTMENT")
     public DepartmentDto createDepartment(DepartmentDto dto)
     {
         Department dept = departmentMapper.toEntity(dto);
@@ -36,7 +38,6 @@ public class DepartmentService {
     }
 
     // get All Department
-    @Cacheable(value = "allDepartments")
     public Page<DepartmentDto> fetchAllDepartment(int page, int size)
     {
         Pageable pageable = PageRequest.of(page, size);
@@ -47,7 +48,7 @@ public class DepartmentService {
     }
 
     // get Department by ID
-    @Cacheable(value = "departments", key = "#id")
+    @Cacheable(value = "departments", key = "#departmentId")
     public DepartmentDto fetchDepartmentById(Long departmentId)
     {
         if (departmentId == null ) {
@@ -68,13 +69,13 @@ public class DepartmentService {
     // Update Department
     @Caching(
             put = {
-                    @CachePut(value = "departments", key = "#id")
+                    @CachePut(value = "departments", key = "#departmentId")
             },
             evict = {
-                    @CacheEvict(value = "allDepartments", allEntries = true),
                     @CacheEvict(value = "departmentByNam",  allEntries = true)
             }
     )
+    @Auditable(action = "UPDATE_DEPARTMENT")
     public DepartmentDto updateDepartment(Long departmentId, DepartmentDto dto)
     {
         Optional<Department> dept = departmentRepository.findById(departmentId);
@@ -94,10 +95,10 @@ public class DepartmentService {
 
     // delete Department
     @Caching(evict = {
-            @CacheEvict(value = "departments", key = "#id"),
-            @CacheEvict(value = "allDepartments", allEntries = true),
+            @CacheEvict(value = "departments", key = "#departmentId"),
             @CacheEvict(value = "departmentByNam",  allEntries = true)
     })
+    @Auditable(action = "DELETE_DEPARTMENT")
     public String deleteDepartment(Long departmentId)
     {
         Optional<Department> department = departmentRepository.findById(departmentId);

@@ -1,5 +1,6 @@
 package com.example.HMS.service;
 
+import com.example.HMS.anotations.Auditable;
 import com.example.HMS.dto.BillDto;
 import com.example.HMS.dto.BillMapper;
 import com.example.HMS.entity.Appointment;
@@ -33,6 +34,7 @@ public class BillService {
     private final BillMapper billMapper;
 
     // Create Bill
+    @Auditable(action = "CREATE_BILL")
     public BillDto createBill(BillDto dto)
     {
         Bill bill = billMapper.toEntity(dto);
@@ -56,7 +58,7 @@ public class BillService {
     }
 
     // get bill by id
-    @Cacheable(value = "bills", key = "#id")
+    @Cacheable(value = "bills", key = "#billId")
     public BillDto getBillById(Long billId)
     {
         if (billId <= 0){
@@ -71,7 +73,6 @@ public class BillService {
     }
 
     // get all bills
-    @Cacheable(value = "allBills")
     public Page<BillDto> getAllBill(int page, int size)
     {
         Pageable pageable = PageRequest.of(page, size);
@@ -85,14 +86,14 @@ public class BillService {
     // Update bill by id
     @Caching(
             put = {
-                    @CachePut(value = "bills", key = "#id"),
+                    @CachePut(value = "bills", key = "#billId"),
             },
             evict = {
-                    @CacheEvict(value = "allBills", allEntries = true),
                     @CacheEvict(value = "billsByAppointment", allEntries = true),
                     @CacheEvict(value = "billsByPatient", allEntries = true)
             }
     )
+    @Auditable(action = "UPDATE_BILL")
     public BillDto updateBillById(Long billId , BillDto dto)
     {
         if (billId <= 0){
@@ -128,11 +129,11 @@ public class BillService {
 
     // Delete bill by id
     @Caching(evict = {
-            @CacheEvict(value = "bills", key = "#id"),
-            @CacheEvict(value = "allBills", allEntries = true),
+            @CacheEvict(value = "bills", key = "#billId"),
             @CacheEvict(value = "billsByPatient", allEntries = true),
             @CacheEvict(value = "billsByAppointment", allEntries = true)
     })
+    @Auditable(action = "DELETE_BILL")
     public void deleteBillById(Long billId)
     {
         billRepository.deleteById(billId);

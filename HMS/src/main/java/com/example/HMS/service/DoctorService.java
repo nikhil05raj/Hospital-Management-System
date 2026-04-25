@@ -1,5 +1,6 @@
 package com.example.HMS.service;
 
+import com.example.HMS.anotations.Auditable;
 import com.example.HMS.dto.DoctorDto;
 import com.example.HMS.dto.DoctorMapper;
 import com.example.HMS.entity.Appointment;
@@ -32,6 +33,7 @@ public class DoctorService {
     private final DoctorMapper doctorMapper;
 
     // Create doctor
+    @Auditable(action = "CREATE_DOCTOR")
     public DoctorDto createDoctor(DoctorDto dto)
     {
         Doctor doctor = doctorMapper.toEntity(dto);
@@ -50,7 +52,7 @@ public class DoctorService {
     }
 
     // get doctor by id
-    @Cacheable(value = "doctors", key = "#id")
+    @Cacheable(value = "doctors", key = "#doctorId")
     public DoctorDto getDoctorById(Long doctorId)
     {
         Optional<Doctor> optionalDoctor = doctorRepository.findById(doctorId);
@@ -62,7 +64,6 @@ public class DoctorService {
     }
 
     // get all doctor
-    @Cacheable(value = "allDoctors")
     public Page<DoctorDto> getAllDoctor(int page, int size)
     {
 
@@ -73,7 +74,7 @@ public class DoctorService {
     }
 
     // get doctor by department
-    @Cacheable(value = "doctorsByDepartment", key = "#departmentName")
+    @Cacheable(value = "doctorsByDepartment", key = "#deptName")
     public List<DoctorDto> fetchDoctorsByDepartment(String deptName)
     {
         if (deptName == null || deptName.trim().isEmpty()) {
@@ -143,13 +144,13 @@ public class DoctorService {
 
             },
             evict = {
-                    @CacheEvict(value = "allDoctors", allEntries = true),
                     @CacheEvict(value = "doctorsBySpec", allEntries = true),
                     @CacheEvict(value = "doctorsByDepartment", allEntries = true),
                     @CacheEvict(value = "doctorsByPatient", allEntries = true),
                     @CacheEvict(value = "doctorsByAppointment", allEntries = true)
             }
     )
+    @Auditable(action = "UPDATE_DOCTOR")
     public DoctorDto updateDoctor(Long doctorId, DoctorDto dto)
     {
         Optional<Doctor> optionalDoctor = doctorRepository.findById(doctorId);
@@ -177,13 +178,13 @@ public class DoctorService {
     @Caching(
             evict = {
                     @CacheEvict(value = "doctors", key = "#doctorId"),
-                    @CacheEvict(value = "allDoctors", allEntries = true),
                     @CacheEvict(value = "doctorsByDepartment", allEntries = true),
                     @CacheEvict(value = "doctorsByPatient", allEntries = true),
                     @CacheEvict(value = "doctorsByAppointment", allEntries = true),
                     @CacheEvict(value = "doctorsBySpec", allEntries = true)
             }
     )
+    @Auditable(action = "DELETE_DOCTOR")
     public void deleteDoctor(Long doctorId){
 
         Optional<Doctor> optionalDoctor = doctorRepository.findById(doctorId);

@@ -1,5 +1,6 @@
 package com.example.HMS.service;
 
+import com.example.HMS.anotations.Auditable;
 import com.example.HMS.dto.PrescriptionDto;
 import com.example.HMS.dto.PrescriptionMapper;
 import com.example.HMS.entity.MedicalRecord;
@@ -29,6 +30,7 @@ public class PrescriptionService {
     MedicalRecord medicalRecord;
 
     // create prescription
+    @Auditable(action = "CREATE_PRESCRIPTION")
     public PrescriptionDto createPrescription(PrescriptionDto dto)
     {
         Prescription prescription = prescriptionMapper.toEntity(dto);
@@ -50,7 +52,6 @@ public class PrescriptionService {
     }
 
     // get all prescription
-    @Cacheable(value = "allPrescription")
     public List<PrescriptionDto> fetchAllPrescription()
     {
         List<Prescription> prescriptions = prescriptionRepository.findAll();
@@ -59,7 +60,7 @@ public class PrescriptionService {
     }
 
     // get prescription by id
-    @Cacheable(value = "prescriptions", key = "#id")
+    @Cacheable(value = "prescriptions", key = "#prescriptionId")
     public PrescriptionDto fetchPrescriptionById(Long prescriptionId)
     {
         if (prescriptionId == null || prescriptionId <= 0) {
@@ -112,14 +113,14 @@ public class PrescriptionService {
     // update prescription
     @Caching(
             put = {
-                    @CachePut(value = "prescriptions", key = "#id")
+                    @CachePut(value = "prescriptions", key = "#prescriptionId")
             },
             evict = {
                     @CacheEvict(value = "prescriptionByPatient", allEntries = true),
-                    @CacheEvict(value = "allPrescription", allEntries = true),
                     @CacheEvict(value = "prescriptionByMedicalRecord", allEntries = true)
             }
     )
+    @Auditable(action = "UPDATE_PRESCRIPTION")
     public PrescriptionDto updatePrescription(Long prescriptionId, PrescriptionDto dto)
     {
         Prescription prescription = null;
@@ -160,12 +161,12 @@ public class PrescriptionService {
     // delete prescription
     @Caching(
             evict = {
-                    @CacheEvict(value = "prescriptions", key = "#id"),
+                    @CacheEvict(value = "prescriptions", key = "#prescriptionId"),
                     @CacheEvict(value = "prescriptionByMedicalRecord", allEntries = true),
-                    @CacheEvict(value = "prescriptionByPatient", allEntries = true),
-                    @CacheEvict(value = "allPrescription", allEntries = true)
+                    @CacheEvict(value = "prescriptionByPatient", allEntries = true)
             }
     )
+    @Auditable(action = "DELETE_PRESCRIPTION")
     public void deletePrescription(Long prescriptionId)
     {
         if (prescriptionId == null ) {

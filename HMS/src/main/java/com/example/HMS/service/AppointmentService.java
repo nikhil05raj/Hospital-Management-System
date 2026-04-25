@@ -1,5 +1,6 @@
 package com.example.HMS.service;
 
+import com.example.HMS.anotations.Auditable;
 import com.example.HMS.dto.AppointmentDto;
 import com.example.HMS.dto.AppointmentMapper;
 import com.example.HMS.entity.Appointment;
@@ -36,6 +37,7 @@ public class AppointmentService {
     private final AppointmentMapper appointmentMapper;
 
     // create appointment
+    @Auditable(action = "CREATE_APPOINTMENT")
     public AppointmentDto createAppointment(AppointmentDto dto)
     {
         if (dto == null) {
@@ -59,7 +61,6 @@ public class AppointmentService {
     }
 
     // get all appointments
-    @Cacheable(value = "allAppointments")
     public Page<AppointmentDto> getAllAppointment(int page, int size)
     {
         Pageable pageable = PageRequest.of(page, size);
@@ -69,7 +70,7 @@ public class AppointmentService {
     }
 
     // get appointment by id
-    @Cacheable(value = "appointments", key = "#id")
+    @Cacheable(value = "appointments", key = "#appointmentId")
     public AppointmentDto getAppointmentById(Long appointmentId)
     {
         Optional<Appointment> optionalAppointment = appointmentRepository.findById(appointmentId);
@@ -90,14 +91,14 @@ public class AppointmentService {
     // update appointment
     @Caching(
             put = {
-                    @CachePut(value = "appointments", key = "#id")
+                    @CachePut(value = "appointments", key = "#appointmentId")
             },
             evict = {
-                    @CacheEvict(value = "allAppointments", allEntries = true),
                     @CacheEvict(value = "appointmentsByDoctor", allEntries = true),
                     @CacheEvict(value = "appointmentsByPatient", allEntries = true)
             }
     )
+    @Auditable(action = "UPDATE_APPOINTMENT")
     public AppointmentDto updateAppointmentById(Long appointmentId,AppointmentDto dto )
     {
         Optional<Appointment> optionalAppointment = appointmentRepository.findById(appointmentId);
@@ -136,6 +137,7 @@ public class AppointmentService {
     }
 
     // Reschedule appointment
+    @Auditable(action = "RESCHEDULE_APPOINTMENT")
     public AppointmentDto rescheduleAppointment(Long appointmentId, AppointmentDto dto)
     {
         Optional<Appointment> optionalAppointment = appointmentRepository.findById(appointmentId);
@@ -159,11 +161,12 @@ public class AppointmentService {
 
     // cancel appointment
     @Caching(evict = {
-            @CacheEvict(value = "appointments", key = "#id"),
+            @CacheEvict(value = "appointments", key = "#appointmentId"),
             @CacheEvict(value = "appointmentsByDoctor", allEntries = true),
             @CacheEvict(value = "appointmentsByPatient", allEntries = true),
             @CacheEvict(value = "allAppointments", allEntries = true)
     })
+    @Auditable(action = "CANCEL_APPOINTMENT")
     public Appointment cancelAppointment(Long appointmentId)
     {
         Optional<Appointment> optionalAppointment = appointmentRepository.findById(appointmentId);

@@ -1,5 +1,6 @@
 package com.example.HMS.service;
 
+import com.example.HMS.anotations.Auditable;
 import com.example.HMS.dto.PatientDto;
 import com.example.HMS.dto.PatientMapper;
 import com.example.HMS.entity.Appointment;
@@ -30,6 +31,7 @@ public class PatientService {
     private final PatientMapper patientMapper;
 
     // Create patient
+    @Auditable(action = "CREATE_PATIENT")
     public PatientDto createPatient(PatientDto dto)
     {
         if (dto == null) {
@@ -43,7 +45,6 @@ public class PatientService {
     }
 
     // get all patients
-    @Cacheable(value = "allPatient")
     public Page<PatientDto> getAllPatient(int page, int size)
     {
         Pageable pageable = PageRequest.of(page, size);
@@ -54,7 +55,7 @@ public class PatientService {
     }
 
     // get patient by id
-    @Cacheable(value = "patients", key = "#id")
+    @Cacheable(value = "patients", key = "#patientId")
     public PatientDto getPatientById(Long patientId)
     {
         if (patientId == null ) {
@@ -95,13 +96,13 @@ public class PatientService {
     // Update patient's details
     @Caching(
             put = {
-                    @CachePut(value = "patients", key = "#id"),
+                    @CachePut(value = "patients", key = "#patientId"),
             },
             evict = {
-                    @CacheEvict(value = "allPatient", allEntries = true),
                     @CacheEvict(value = "patientByAppointment", allEntries = true)
             }
     )
+    @Auditable(action = "UPDATE_PATIENT")
     public PatientDto updatePatient(Long patientId, PatientDto dto)
     {
         Optional<Patient> existingPatient = patientRepository.findById(patientId);
@@ -130,11 +131,11 @@ public class PatientService {
     // delete patient record
     @Caching(
             evict = {
-                    @CacheEvict(value = "patients", key = "#id"),
-                    @CacheEvict(value = "allPatient", allEntries = true),
+                    @CacheEvict(value = "patients", key = "#patientId"),
                     @CacheEvict(value = "patientByAppointment", allEntries = true),
             }
     )
+    @Auditable(action = "DELETE_PATIENT")
     public void deletePatient(Long patientId)
     {
         patientRepository.deleteById(patientId);
